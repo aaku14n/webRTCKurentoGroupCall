@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Kurento Group Call Node</title>
+    <link rel="stylesheet" href="css/index.css">
+</head>
+
+<body>
+
+	<div id="container">
+		<div id="wrapper">
+			<div id="join" class="animate join">
+				<h1>Join a Room</h1>
+				<form onsubmit="register(); return false;" accept-charset="UTF-8">
+					<p>
+						<input type="text" name="name" value="" id="name"
+							placeholder="Username" required>
+					</p>
+					<p>
+						<input type="text" name="room" value="" id="roomName"
+							placeholder="Room" required>
+					</p>
+					<p class="submit">
+						<input type="submit" name="commit" value="Join!">
+					</p>
+				</form>
+			</div>
+			<div id="room" style="display: none;">
+				<h2 id="room-header"></h2>
+				<div id="participants"></div>
+				<input type="button" id="button-leave" onmouseup="leaveRoom();"
+					value="Leave room">
+			</div>
+		</div>
+	</div>
+
+    <script src="./bower_components/socket.io-client/dist/socket.io.js"></script>
+    <script src="./bower_components/adapter.js/adapter.js"></script>
+    <script src="./bower_components/kurento-utils/js/kurento-utils.min.js"></script>
+    <script src="./js/index.js"></script>
+    <script src="./js/participants.js"></script>
+    
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "static",
+  "authors": ["ChengBin <997155658@qq.com>"],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "homepage": "",
+  "ignore": ["**/.*", "node_modules", "bower_components", "test", "tests"],
+  "dependencies": {
+    "socket.io-client": "2.0.3",
+    "adapter.js": "v0.2.9",
+    "kurento-utils": "6.7.0"
+  }
+}
