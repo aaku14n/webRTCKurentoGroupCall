@@ -16,7 +16,7 @@ let rooms = {};
 const argv = minimst(process.argv.slice(2), {
   default: {
     as_uri: "https://app.littra.in:4200",
-    ws_uri: "ws://18.218.103.187:8888/kurento"
+    ws_uri: "http://18.218.103.187:8888/kurento"
   }
 });
 
@@ -33,7 +33,7 @@ let server =
   });
 
 /////////////////////////// websocket ///////////////////////////////
-console.log(server);
+
 let io = socketIO(server).path("/groupcall");
 let wsUrl = url.parse(argv.ws_uri).href;
 
