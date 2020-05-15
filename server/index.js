@@ -16,7 +16,7 @@ let rooms = {};
 const argv = minimst(process.argv.slice(2), {
   default: {
     as_uri: "http://localhost:4200",
-    ws_uri: "https://kurent.littra.in:8888/kurento"
+    ws_uri: "https://kurent.littra.in/kurento"
   }
 });
 // "http://18.218.103.187:8888/kurento"
