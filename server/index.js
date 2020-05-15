@@ -15,18 +15,18 @@ let rooms = {};
 
 const argv = minimst(process.argv.slice(2), {
   default: {
-    as_uri: "https://app.littra.in:4200",
-    ws_uri: "http://18.218.103.187:8888/kurento"
+    as_uri: "http://localhost:3000",
+    ws_uri: "wss://kurent.littra.in:8888/kurento"
   }
 });
-
+// "http://18.218.103.187:8888/kurento"
 let app = express();
 
 let asUrl = url.parse(argv.as_uri);
 let port = asUrl.port;
 console.log(port);
 let server =
-  // https.createServer(options, app)s
+  // https.createServer(options, app)
   app.listen(port, () => {
     console.log("Group Call started");
     console.log("Open %s with a WebRTC capable brower.", url.format(asUrl));
@@ -348,6 +348,7 @@ function getKurentoClient(callback) {
   kurento(wsUrl, (error, kurentoClient) => {
     if (error) {
       let message = `Could not find media server at address ${wsUrl}`;
+      console.log(message, error);
       return callback(`${message} . Exiting with error ${error}`);
     }
     callback(null, kurentoClient);
