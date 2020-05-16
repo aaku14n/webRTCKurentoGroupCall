@@ -16,7 +16,7 @@ let rooms = {};
 const argv = minimst(process.argv.slice(2), {
   default: {
     as_uri: "http://localhost:4200",
-    ws_uri: "http://kurent.littra.in:8888/kurento"
+    ws_uri: "ws://kurento.littra.in:8888/kurento"
   }
 });
 // "http://18.218.103.187:8888/kurento"
@@ -346,9 +346,10 @@ function leaveRoom(socket, callback) {
  */
 function getKurentoClient(callback) {
   kurento(wsUrl, (error, kurentoClient) => {
+    console.log(error);
     if (error) {
       let message = `Could not find media server at address ${wsUrl}`;
-      console.log(message, error);
+      console.log("=============", message, error);
       return callback(`${message} . Exiting with error ${error}`);
     }
     callback(null, kurentoClient);
