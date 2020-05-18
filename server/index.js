@@ -383,9 +383,7 @@ function addIceCandidate(socket, message, callback) {
   console.log(message);
   if (user != null) {
     // assign type to IceCandidate
-    let candidate = kurento.register.complexTypes.IceCandidate(
-      message.candidate
-    );
+    let candidate = kurento.register.complexTypes.IceCandidate(message.ice);
     user.addIceCandidate(message, candidate);
     callback();
   } else {
