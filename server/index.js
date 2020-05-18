@@ -15,7 +15,7 @@ let rooms = {};
 
 const argv = minimst(process.argv.slice(2), {
   default: {
-    as_uri: "https://api.littra.in:4200",
+    as_uri: "https://api.littra.in:4201",
     ws_uri: "ws://kurento.littra.in:8888/kurento"
   }
 });
