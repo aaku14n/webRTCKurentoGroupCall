@@ -61,7 +61,7 @@ io.on("connection", socket => {
 
   socket.on("msg", message => {
     console.log(`Connection: receive message`);
-    console.log(message);
+
     switch (message.type) {
       case "init":
         joinRoom(socket, message, err => {
@@ -71,9 +71,6 @@ io.on("connection", socket => {
         });
         break;
       case "sdp-offer":
-        console.log("yahoooooooooo");
-        console.log(message.userId);
-        console.log("here we cam");
         receiveVideoFrom(socket, message.userId, message.sdp, err => {
           if (err) {
             console.error(err);
@@ -365,10 +362,9 @@ function leaveRoom(socket, callback) {
  */
 function getKurentoClient(callback) {
   kurento(wsUrl, (error, kurentoClient) => {
-    console.log(error);
     if (error) {
       let message = `Could not find media server at address ${wsUrl}`;
-      console.log("=============", message, error);
+
       return callback(`${message} . Exiting with error ${error}`);
     }
     callback(null, kurentoClient);
@@ -384,6 +380,7 @@ function getKurentoClient(callback) {
  */
 function addIceCandidate(socket, message, callback) {
   let user = userRegister.getById(socket.id);
+  console.log(message);
   if (user != null) {
     // assign type to IceCandidate
     let candidate = kurento.register.complexTypes.IceCandidate(
@@ -404,7 +401,6 @@ function addIceCandidate(socket, message, callback) {
  * @param {*} callback
  */
 function getEndpointForUser(userSession, sender, callback) {
-  console.log(userSession, sender);
   if (userSession.userId === sender.userId) {
     return callback(null, userSession.outgoingMedia);
   }
