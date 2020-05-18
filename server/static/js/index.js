@@ -15,7 +15,7 @@
  *
  */
 
-var socket = io("https://" + location.host);
+var socket = io("http://" + location.host);
 var participants = {};
 var name;
 
@@ -76,7 +76,7 @@ function register() {
 }
 
 function onNewParticipant(request) {
-  receiveVideo(request.name);
+  receiveVideo(request.userId);
 }
 
 function receiveVideoResponse(result) {
@@ -148,6 +148,7 @@ function leaveRoom() {
 }
 
 function receiveVideo(sender) {
+  console.log(sender);
   var participant = new Participant(sender);
   participants[sender] = participant;
   var video = participant.getVideoElement();
