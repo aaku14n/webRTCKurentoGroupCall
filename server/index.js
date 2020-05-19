@@ -272,7 +272,7 @@ function receiveVideoFrom(socket, senderId, sdpOffer, callback) {
   console.log("here we showing uswers detils");
   console.log(sender, senderId);
   getEndpointForUser(userSession, sender, (error, endpoint) => {
-    if (error) {
+    if (error || !endpoint) {
       callback(error);
     }
 
@@ -398,7 +398,7 @@ function addIceCandidate(socket, message, callback) {
  * @param {*} sender
  * @param {*} callback
  */
-function getEndpointForUser(userSession, sender, callback) {
+function getEndpointForUser(userSession = {}, sender = {}, callback) {
   if (userSession.userId === sender.userId) {
     return callback(null, userSession.outgoingMedia);
   }
