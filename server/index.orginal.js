@@ -15,18 +15,18 @@ let rooms = {};
 
 const argv = minimst(process.argv.slice(2), {
   default: {
-    as_uri: "http://localhost:4201",
+    as_uri: "https://app.littra.in:4200",
     ws_uri: "ws://kurento.littra.in:8888/kurento"
   }
 });
-// "http://18.218.103.187:8888/kurento"
+
 let app = express();
 
 let asUrl = url.parse(argv.as_uri);
 let port = asUrl.port;
 console.log(port);
 let server =
-  // https.createServer(options, app)
+  // https.createServer(options, app)s
   app.listen(port, () => {
     console.log("Group Call started");
     console.log("Open %s with a WebRTC capable brower.", url.format(asUrl));
@@ -43,26 +43,14 @@ io.on("connection", socket => {
     console.error(`Connection %s error : %s`, socket.id, err);
   });
 
-  // error handle
-  socket.on("init", data => {
-    if (data.roomId) {
-      joinRoom(socket, data, err => {
-        if (err) {
-          console.log(`join Room error ${err}`);
-        }
-      });
-    }
-    return "Success";
-  });
-
   socket.on("disconnect", data => {
     console.log(`Connection : %s disconnect`, data);
   });
 
-  socket.on("msg", message => {
-    console.log(`Connection: %s receive message`, message.userId);
-    console.log(message);
-    switch (message.type) {
+  socket.on("message", message => {
+    console.log(`Connection: %s receive message`, message.id);
+
+    switch (message.id) {
       case "joinRoom":
         joinRoom(socket, message, err => {
           if (err) {
@@ -70,8 +58,9 @@ io.on("connection", socket => {
           }
         });
         break;
-      case "sdp-offer":
-        receiveVideoFrom(socket, message.userId, message.sdp, err => {
+      case "receiveVideoFrom":
+        console.log(message);
+        receiveVideoFrom(socket, message.sender, message.sdpOffer, err => {
           if (err) {
             console.error(err);
           }
@@ -84,7 +73,7 @@ io.on("connection", socket => {
           }
         });
         break;
-      case "ice":
+      case "onIceCandidate":
         addIceCandidate(socket, message, err => {
           if (err) {
             console.error(err);
@@ -103,12 +92,12 @@ io.on("connection", socket => {
  * @param {*} roomName
  */
 function joinRoom(socket, message, callback) {
-  getRoom(message.roomId, (error, room) => {
+  getRoom(message.roomName, (error, room) => {
     if (error) {
       callback(error);
       return;
     }
-    join(socket, room, message.userId, (err, user) => {
+    join(socket, room, message.name, (err, user) => {
       console.log(`join success : ${user.userId}`);
       if (err) {
         callback(err);
@@ -122,14 +111,14 @@ function joinRoom(socket, message, callback) {
 /**
  * Get room. Creates room if room does not exists
  *
- * @param {string} roomId
+ * @param {string} roomName
  * @param {function} callback
  */
-function getRoom(roomId, callback) {
-  let room = rooms[roomId];
+function getRoom(roomName, callback) {
+  let room = rooms[roomName];
 
   if (room == null) {
-    console.log(`create new room : ${roomId}`);
+    console.log(`create new room : ${roomName}`);
     getKurentoClient((error, kurentoClient) => {
       if (error) {
         return callback(error);
@@ -145,20 +134,20 @@ function getRoom(roomId, callback) {
             return callback(error);
           }
           room = {
-            roomId: roomId,
+            name: roomName,
             pipeline: pipeline,
             participants: {},
             kurentoClient: kurentoClient,
             composite: composite
           };
 
-          rooms[roomId] = room;
+          rooms[roomName] = room;
           callback(null, room);
         });
       });
     });
   } else {
-    console.log(`get existing room : ${roomId}`);
+    console.log(`get existing room : ${roomName}`);
     callback(null, room);
   }
 }
@@ -169,12 +158,12 @@ function getRoom(roomId, callback) {
  *
  * @param {*} socket
  * @param {*} room
- * @param {*} userId
+ * @param {*} userName
  * @param {*} callback
  */
-function join(socket, room, userId, callback) {
+function join(socket, room, userName, callback) {
   // add user to session
-  let userSession = new Session(socket, userId, room.roomId);
+  let userSession = new Session(socket, userName, room.roomId);
 
   // register
   userRegister.register(userSession);
@@ -185,12 +174,13 @@ function join(socket, room, userId, callback) {
       if (Object.keys(room.participants).length === 0) {
         room.pipeline.release();
       }
+
       return callback(error);
     }
 
     // else
-    outgoingMedia.setMaxVideoRecvBandwidth(100);
-    outgoingMedia.setMinVideoRecvBandwidth(20);
+    outgoingMedia.setMaxVideoRecvBandwidth(300);
+    outgoingMedia.setMinVideoRecvBandwidth(100);
     userSession.setOutgoingMedia(outgoingMedia);
 
     // add ice candidate the get sent before endpoint is established
@@ -202,9 +192,7 @@ function join(socket, room, userId, callback) {
         console.error(
           `user: ${userSession.id} collect candidate for outgoing media`
         );
-
-        console.log("here we cam____________________________ h i main flow");
-        userSession.outgoingMedia.addIceCandidate(message.ice);
+        userSession.outgoingMedia.addIceCandidate(message.candidate);
       }
     }
 
@@ -218,7 +206,7 @@ function join(socket, room, userId, callback) {
       );
       userSession.sendMessage({
         id: "iceCandidate",
-        userId: userSession.userId,
+        name: userSession.userId,
         candidate: candidate
       });
     });
@@ -227,6 +215,8 @@ function join(socket, room, userId, callback) {
     let usersInRoom = room.participants;
     for (let i in usersInRoom) {
       if (usersInRoom[i].userId != userSession.userId) {
+        console.log("arribec+++++++++++++++++++");
+        console.log(userSession.userId);
         usersInRoom[i].sendMessage({
           id: "newParticipantArrived",
           userId: userSession.userId
@@ -238,36 +228,39 @@ function join(socket, room, userId, callback) {
     let existingUsers = [];
     for (let i in usersInRoom) {
       if (usersInRoom[i].userId != userSession.userId) {
-        existingUsers.push({ id: usersInRoom[i].userId });
+        existingUsers.push(usersInRoom[i].userId);
       }
     }
+    console.log(existingUsers);
     userSession.sendMessage({
       id: "existingParticipants",
       data: existingUsers,
-      roomId: room.name
+      roomName: room.roomId
     });
 
     // register user to room
     room.participants[userSession.userId] = userSession;
 
-    // room.composite.createHubPort((error, hubPort) => {
-    //   if (error) {
-    //     return callback(error);
-    //   }
-    //   userSession.setHubPort(hubPort);
+    room.composite.createHubPort((error, hubPort) => {
+      if (error) {
+        return callback(error);
+      }
+      userSession.setHubPort(hubPort);
 
-    //   userSession.outgoingMedia.connect(userSession.hubPort);
-    //   //userSession.hubPort.connect(userSession.outz);
-
-    //   callback(null, userSession);
-    // });
+      userSession.outgoingMedia.connect(userSession.hubPort);
+      //userSession.hubPort.connect(userSession.outz);
+      console.log();
+      callback(null, userSession);
+    });
   });
 }
 
 // receive video from sender
-function receiveVideoFrom(socket, senderId, sdpOffer, callback) {
+function receiveVideoFrom(socket, senderName, sdpOffer, callback) {
+  console.log(senderName);
+  console.log("+++++++++))))))))");
   let userSession = userRegister.getById(socket.id);
-  let sender = userRegister.getByName(senderId);
+  let sender = userRegister.getByName(senderName);
 
   getEndpointForUser(userSession, sender, (error, endpoint) => {
     if (error) {
@@ -275,13 +268,13 @@ function receiveVideoFrom(socket, senderId, sdpOffer, callback) {
     }
 
     endpoint.processOffer(sdpOffer, (error, sdpAnswer) => {
-      console.log(`process offer from ${senderId} to ${userSession.id}`);
+      console.log(`process offer from ${senderName} to ${userSession.id}`);
       if (error) {
         return callback(error);
       }
       let data = {
         id: "receiveVideoAnswer",
-        userId: sender.userId,
+        name: sender.userId,
         sdpAnswer: sdpAnswer
       };
       userSession.sendMessage(data);
@@ -307,7 +300,7 @@ function leaveRoom(socket, callback) {
     return;
   }
 
-  var room = rooms[userSession.roomName];
+  var room = rooms[userSession.roomId];
 
   if (!room) {
     return;
@@ -317,7 +310,7 @@ function leaveRoom(socket, callback) {
     "notify all user that " +
       userSession.id +
       " is leaving the room " +
-      room.name
+      room.roomId
   );
   var usersInRoom = room.participants;
   delete usersInRoom[userSession.userId];
@@ -346,9 +339,9 @@ function leaveRoom(socket, callback) {
   // Release pipeline and delete room when room is empty
   if (Object.keys(room.participants).length == 0) {
     room.pipeline.release();
-    delete rooms[userSession.roomName];
+    delete rooms[userSession.roomId];
   }
-  delete userSession.roomName;
+  delete userSession.roomId;
 
   callback();
 }
@@ -360,10 +353,8 @@ function leaveRoom(socket, callback) {
  */
 function getKurentoClient(callback) {
   kurento(wsUrl, (error, kurentoClient) => {
-    console.log(error);
     if (error) {
       let message = `Could not find media server at address ${wsUrl}`;
-
       return callback(`${message} . Exiting with error ${error}`);
     }
     callback(null, kurentoClient);
@@ -379,16 +370,17 @@ function getKurentoClient(callback) {
  */
 function addIceCandidate(socket, message, callback) {
   let user = userRegister.getById(socket.id);
-  console.log("+++++++++++++++++++++++++++", user, "__________________");
+  console.log("came here for regiester ");
+  console.log("&&&&&&&&&&&&&&&&&&&&&&&&");
   if (user != null) {
     // assign type to IceCandidate
-    let candidate = kurento.register.complexTypes.IceCandidate(message.ice);
+    let candidate = kurento.register.complexTypes.IceCandidate(
+      message.candidate
+    );
     user.addIceCandidate(message, candidate);
-    console.log("camse in sccess case ________________________");
     callback();
   } else {
-    console.log("cmaein fairlure case ++++++++++++++++++++++++");
-    console.error(`ice candidate with no user receive : ${message.userId}`);
+    console.error(`ice candidate with no user receive : ${message.sender}`);
     callback(new Error("addIceCandidate failed."));
   }
 }
@@ -400,6 +392,7 @@ function addIceCandidate(socket, message, callback) {
  * @param {*} callback
  */
 function getEndpointForUser(userSession, sender, callback) {
+  console.log(sender);
   if (userSession.userId === sender.userId) {
     return callback(null, userSession.outgoingMedia);
   }
@@ -436,7 +429,7 @@ function getEndpointForUser(userSession, sender, callback) {
           while (iceCandidateQueue.length) {
             let message = iceCandidateQueue.shift();
             console.log(
-              `user: ${userSession.userId} collect candidate for ${message.data.userId}`
+              `user: ${userSession.userId} collect candidate for ${message.data.sender}`
             );
             incomingMedia.addIceCandidate(message.candidate);
           }
@@ -450,12 +443,12 @@ function getEndpointForUser(userSession, sender, callback) {
           );
           userSession.sendMessage({
             id: "iceCandidate",
-            userId: sender.userId,
+            name: sender.userId,
             candidate: candidate
           });
         });
 
-        // sender.hubPort.connect(incomingMedia);
+        sender.hubPort.connect(incomingMedia);
 
         callback(null, incomingMedia);
       });

@@ -49,8 +49,6 @@ export default class Register {
    * @param {string} name
    */
   getByName(name) {
-    console.log("====================");
-    console.log(this.usersByName);
     return this.usersByName[name];
   }
 
