@@ -32,7 +32,7 @@ export default class Session {
    */
   addIceCandidate(data, candidate) {
     // self
-    console.log(data, this.userId);
+
     if (data.userId === this.userId) {
       // have outgoing media.
       if (this.outgoingMedia) {

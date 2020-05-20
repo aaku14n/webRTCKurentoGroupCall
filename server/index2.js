@@ -61,7 +61,7 @@ io.on("connection", socket => {
 
   socket.on("msg", message => {
     console.log(`Connection: %s receive message`, message.userId);
-    console.log(message);
+
     switch (message.type) {
       case "joinRoom":
         joinRoom(socket, message, err => {
@@ -140,21 +140,32 @@ function getRoom(roomId, callback) {
           return callback(error);
         }
 
-        pipeline.create("Composite", (error, composite) => {
-          if (error) {
-            return callback(error);
-          }
-          room = {
-            roomId: roomId,
-            pipeline: pipeline,
-            participants: {},
-            kurentoClient: kurentoClient,
-            composite: composite
-          };
+        // pipeline.create("Composite", (error, composite) => {
+        //   if (error) {
+        //     return callback(error);
+        //   }
+        //   room = {
+        //     roomId: roomId,
+        //     pipeline: pipeline,
+        //     participants: {},
+        //     kurentoClient: kurentoClient,
+        //     composite: composite
+        //   };
 
-          rooms[roomId] = room;
-          callback(null, room);
-        });
+        //   rooms[roomId] = room;
+        //   callback(null, room);
+        // });
+
+        room = {
+          roomId: roomId,
+          pipeline: pipeline,
+          participants: {},
+          kurentoClient: kurentoClient
+          // composite: composite
+        };
+
+        rooms[roomId] = room;
+        callback(null, room);
       });
     });
   } else {
@@ -203,8 +214,7 @@ function join(socket, room, userId, callback) {
           `user: ${userSession.id} collect candidate for outgoing media`
         );
 
-        console.log("here we cam____________________________ h i main flow");
-        userSession.outgoingMedia.addIceCandidate(message.ice);
+        userSession.outgoingMedia.addIceCandidate(message.candidate);
       }
     }
 
@@ -379,15 +389,14 @@ function getKurentoClient(callback) {
  */
 function addIceCandidate(socket, message, callback) {
   let user = userRegister.getById(socket.id);
-  console.log("+++++++++++++++++++++++++++", user, "__________________");
+
   if (user != null) {
     // assign type to IceCandidate
     let candidate = kurento.register.complexTypes.IceCandidate(message.ice);
     user.addIceCandidate(message, candidate);
-    console.log("camse in sccess case ________________________");
+
     callback();
   } else {
-    console.log("cmaein fairlure case ++++++++++++++++++++++++");
     console.error(`ice candidate with no user receive : ${message.userId}`);
     callback(new Error("addIceCandidate failed."));
   }
@@ -426,8 +435,8 @@ function getEndpointForUser(userSession, sender, callback) {
         }
 
         console.log(`user: ${userSession.id} successfully create pipeline`);
-        incomingMedia.setMaxVideoRecvBandwidth(300);
-        incomingMedia.setMinVideoRecvBandwidth(100);
+        incomingMedia.setMaxVideoRecvBandwidth(100);
+        incomingMedia.setMinVideoRecvBandwidth(20);
         userSession.incomingMedia[sender.userId] = incomingMedia;
 
         // add ice candidate the get sent before endpoints is establlished
@@ -454,7 +463,12 @@ function getEndpointForUser(userSession, sender, callback) {
             candidate: candidate
           });
         });
-
+        sender.outgoingMedia.connect(incomingMedia, erro => {
+          if (erro) {
+            callback(erro);
+          }
+          callback(null, incomingMedia);
+        });
         // sender.hubPort.connect(incomingMedia);
 
         callback(null, incomingMedia);
