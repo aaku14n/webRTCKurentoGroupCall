@@ -77,6 +77,9 @@ io.on("connection", socket => {
           }
         });
         break;
+      case "remove-stream":
+        removeStream(socket, message.userId);
+        break;
       case "leaveRoom":
         leaveRoom(socket, err => {
           if (err) {
@@ -487,4 +490,22 @@ function getEndpointForUser(userSession, sender, callback) {
   }
 }
 
+function removeStream(socket, senderId) {
+  console.log("remove stream ");
+  let userSession = userRegister.getById(socket.id);
+
+  let incoming = userSession.incomingMedia[userSession.userId];
+
+  getRoom(userSession.roomId, (error, room) => {
+    console.log(room.participants);
+    Object.keys(room.participants).map(user => {
+      // room.participants[user].outgoingMedia.disconnect(incoming, "VIDEO");
+      console.log(room.participants[user].incomingMedia, userSession.userId);
+      room.participants[user].incomingMedia[userSession.userId] &&
+        room.participants[user].incomingMedia[userSession.userId].release();
+      delete room.participants[user].incomingMedia;
+    });
+  });
+  userSession.outgoingMedia.release();
+}
 app.use(express.static(path.join(__dirname, "static")));
