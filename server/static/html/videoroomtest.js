@@ -46,7 +46,7 @@ var server = null;
 // if (window.location.protocol === "http:")
 //   server = "http://" + "13.126.225.37" + ":8088/janus";
 // else server = "https://" + "13.126.225.37" + ":8089/janus";
-server = "http://janustest.littra.in:8088/janus";
+server = "https://janustest.littra.in/janus";
 var janus = null;
 var sfutest = null;
 var opaqueId = "videoroomtest-" + Janus.randomString(12);
