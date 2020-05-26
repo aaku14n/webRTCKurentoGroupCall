@@ -86,7 +86,13 @@ $(document).ready(function() {
         // Create session
         janus = new Janus({
           server: server,
-
+          iceServers: [
+            {
+              url: "turn:janustest.littra.in:3478?transport=udp",
+              credential: "littra132",
+              username: "littraTurn"
+            }
+          ],
           success: function() {
             // Attach to VideoRoom plugin
             janus.attach({
@@ -121,6 +127,7 @@ $(document).ready(function() {
                   });
               },
               error: function(error) {
+                console.error("Json error", error);
                 Janus.error("  -- Error attaching plugin...", error);
                 bootbox.alert("Error attaching plugin... " + error);
               },
@@ -158,6 +165,7 @@ $(document).ready(function() {
                 );
               },
               webrtcState: function(on) {
+                console.log(on);
                 Janus.log(
                   "Janus says our WebRTC PeerConnection is " +
                     (on ? "up" : "down") +
