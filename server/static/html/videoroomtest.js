@@ -43,9 +43,10 @@
 // the whole session.
 //
 var server = null;
-// if (window.location.protocol === "http:")
-//   server = "http://" + "13.126.225.37" + ":8088/janus";
-// else server = "https://" + "13.126.225.37" + ":8089/janus";
+if (window.location.protocol === "http:")
+  server = "http://" + window.location.hostname + ":8088/janus";
+else server = "https://" + window.location.hostname + ":8089/janus";
+
 server = "https://janustest.littra.in/janus";
 var janus = null;
 var sfutest = null;
@@ -87,10 +88,11 @@ $(document).ready(function() {
         janus = new Janus({
           server: server,
           iceServers: [
+            { urls: "stun:janustest.littra.in:3478" },
             {
-              url: "turn:janustest.littra.in:3478?transport=udp",
-              credential: "littra132",
-              username: "littraTurn"
+              urls: "turn:janustest.littra.in:3478",
+              username: "littraTurn",
+              credential: "littra123"
             }
           ],
           success: function() {
@@ -127,7 +129,6 @@ $(document).ready(function() {
                   });
               },
               error: function(error) {
-                console.error("Json error", error);
                 Janus.error("  -- Error attaching plugin...", error);
                 bootbox.alert("Error attaching plugin... " + error);
               },
@@ -165,7 +166,6 @@ $(document).ready(function() {
                 );
               },
               webrtcState: function(on) {
-                console.log(on);
                 Janus.log(
                   "Janus says our WebRTC PeerConnection is " +
                     (on ? "up" : "down") +
